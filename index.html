@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VIBE MIX STUDIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0f1c;--panel:#121829;--panel2:#182038;--line:#26304f;--text:#e6ebf8;--mute:#8e9ac0;--cy:#27e1ff;--vi:#9b7bff;--mg:#ff4fa3;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:radial-gradient(1200px 500px at 80% -10%,#1a1f46 0,transparent 60%),var(--bg);color:var(--text);font:14px/1.5 Sora,system-ui,sans-serif;min-height:100vh}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:20px;letter-spacing:.14em;font-weight:700}
+h1 span{color:var(--cy)}
+.tabs{display:flex;gap:6px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
+.tabs button{border:0;background:none;color:var(--mute);padding:8px 14px;border-radius:9px;font:inherit;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--panel2);color:var(--text);box-shadow:inset 0 -2px 0 var(--cy)}
+.tabs button[data-m=C][aria-selected=true]{box-shadow:inset 0 -2px 0 var(--vi)}
+main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:20px;padding:20px 24px;max-width:1400px;margin:auto}
+@media(max-width:900px){main{grid-template-columns:1fr;padding:16px}}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+h2{margin:0 0 12px;font-size:15px;font-weight:600}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--mute);cursor:pointer;transition:.15s}
+.drop:hover,.drop.over,.drop:focus-visible{border-color:var(--cy);color:var(--text);outline:none}
+.track{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+.thead{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.tname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.badge{font-size:12px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--mute)}
+.badge.ok{color:var(--cy);border-color:#1b6f80}.badge.pri{color:var(--mg);border-color:#7a2a57}
+canvas{width:100%;height:56px;display:block;margin:8px 0;border-radius:8px;background:#0c1224}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+label{display:flex;flex-direction:column;gap:2px;color:var(--mute);font-size:12px;flex:1;min-width:110px}
+label b{color:var(--text);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--cy)}
+input[type=number],textarea{background:#0c1224;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:100%}
+textarea{min-height:72px;resize:vertical}
+button.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:8px 14px;font:inherit;cursor:pointer}
+button.btn:hover{border-color:var(--cy)}
+button.btn:focus-visible,.tabs button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+button.btn.main{background:var(--cy);color:#04141a;border-color:var(--cy);font-weight:700}
+button.btn.ai{background:var(--vi);color:#120a2e;border-color:var(--vi);font-weight:700}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+.stack{display:flex;flex-direction:column;gap:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:12px;padding:3px 9px;border-radius:20px;background:#241a4d;color:#c9baff}
+.chip.no{background:#3a1830;color:#ff9fcf}
+#status{color:var(--mute);min-height:20px}
+.hint{color:var(--mute);font-size:12px;margin:6px 0 0}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--text)}
+.hide{display:none!important}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>VIBE <span>MIX</span> STUDIO</h1>
+  <div class="tabs" role="tablist" aria-label="Creation mode">
+    <button role="tab" data-m="A" aria-selected="true">DJ mix</button>
+    <button role="tab" data-m="B" aria-selected="false">Mashup</button>
+    <button role="tab" data-m="C" aria-selected="false">Creative remix</button>
+  </div>
+</header>
+<main>
+  <div class="stack">
+    <section>
+      <h2 id="trackTitle">Tracks</h2>
+      <div class="drop" id="drop" tabindex="0" role="button">Drop audio files here or click to choose (MP3, WAV, M4A, OGG)</div>
+      <input id="file" type="file" accept="audio/*" multiple hidden>
+      <div id="tracks"></div>
+    </section>
+    <section>
+      <h2>Mix output</h2>
+      <canvas id="out" style="height:90px"></canvas>
+      <div class="row">
+        <button class="btn main" id="renderBtn">Render preview</button>
+        <button class="btn" id="playBtn" disabled>Play</button>
+        <button class="btn" id="stopBtn" disabled>Stop</button>
+        <button class="btn" id="expBtn" disabled>Export WAV</button>
+      </div>
+      <p id="status" role="status">Add at least one track to begin.</p>
+    </section>
+  </div>
+  <div class="stack">
+    <section id="pA">
+      <h2 id="ctlTitle">Transitions</h2>
+      <div id="mAopts" class="stack" style="gap:12px">
+        <label>Crossfade length <b id="xv">8 s</b><input type="range" id="xfade" min="1" max="20" value="8"></label>
+      </div>
+      <div id="mBopts" class="stack hide" style="gap:12px">
+        <label>Output duration <b id="dv">60 s</b><input type="range" id="dur" min="10" max="240" value="60"></label>
+        <label>Fade length <b id="tv">4 s</b><input type="range" id="trans" min="0" max="12" value="4"></label>
+        <p class="hint">The first track is the primary. Set where each track starts in its source and when it enters the mix. This mixes full tracks; it does not isolate vocals.</p>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="check"><input type="checkbox" id="tempo" checked> Match tempo</label>
+        <label class="check"><input type="checkbox" id="align" checked> Align beats</label>
+        <label class="check"><input type="checkbox" id="swap" checked> Bass swap in transitions</label>
+      </div>
+      <p class="hint">Tempo matching changes playback speed by up to 8%, so pitch shifts slightly. Matching and alignment are skipped for tracks where the BPM reading is unreliable.</p>
+    </section>
+    <section id="pC" class="hide">
+      <h2>Describe the remix</h2>
+      <textarea id="prompt" placeholder="Example: make it more energetic, club mix, stronger bass, build-up before the end"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn ai" id="applyBtn">Apply to mix settings</button></div>
+      <div class="chips" id="applied"></div>
+      <p class="hint">Instructions are mapped to the effects this studio really has: tempo, EQ, pumping, echo, reverb and a filter build-up. Anything it cannot do is listed in pink instead of being faked.</p>
+    </section>
+    <section>
+      <h2>Master EQ and effects</h2>
+      <label>Bass <b id="lv">0 dB</b><input type="range" id="eqL" min="-12" max="12" value="0"></label>
+      <label>Mid <b id="mv">0 dB</b><input type="range" id="eqM" min="-12" max="12" value="0"></label>
+      <label>Treble <b id="hv">0 dB</b><input type="range" id="eqH" min="-12" max="12" value="0"></label>
+      <div class="row" style="margin-top:10px">
+        <label>Echo <b id="ev">0%</b><input type="range" id="fxE" min="0" max="60" value="0"></label>
+        <label>Reverb <b id="rv">0%</b><input type="range" id="fxR" min="0" max="60" value="0"></label>
+        <label>Synth percussion <b id="dd">0%</b><input type="range" id="fxD" min="0" max="100" value="0"></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="check"><input type="checkbox" id="fxP"> Beat-synced pumping</label>
+        <label class="check"><input type="checkbox" id="fxB"> Filter build-up at the end</label>
+      </div>
+    </section>
+  </div>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const S={mode:'A',tracks:[],out:null,tgt:0,tempoMul:1};
+let actx=null,srcNode=null,t0=0,raf=0,busy=false;
+const AC=()=>actx||(actx=new (window.AudioContext||window.webkitAudioContext)());
+const say=m=>$('status').textContent=m;
+
+/* ---------- analysis ---------- */
+function detect(buf){
+  const sr=buf.sampleRate,ch=buf.getChannelData(0),hop=512;
+  const n=Math.min(Math.floor(ch.length/hop),Math.floor(120*sr/hop));
+  const env=new Float32Array(n);let y=0;
+  for(let i=0;i<n;i++){let e=0;for(let j=0;j<hop;j++){y+=0.05*(ch[i*hop+j]-y);e+=y*y}env[i]=Math.sqrt(e/hop)}
+  const on=new Float32Array(n);for(let i=1;i<n;i++)on[i]=Math.max(0,env[i]-env[i-1]);
+  const fps=sr/hop,lo=Math.floor(fps*60/180),hi=Math.ceil(fps*60/70),r=[];let best=lo,sum=0;
+  for(let L=lo-1;L<=hi+1;L++){let s=0;for(let i=0;i+L<n;i++)s+=on[i]*on[i+L];r[L]=s/(n-L)}
+  for(let L=lo;L<=hi;L++){sum+=r[L];if(r[L]>r[best])best=L}
+  const mean=sum/(hi-lo+1),a=r[best-1],b=r[best],c=r[best+1],d=a-2*b+c;
+  const lag=best+(d?0.5*(a-c)/d:0),bpm=60*fps/lag,conf=mean>0?r[best]/mean:0;
+  let ph=0,ps=-1;for(let o=0;o<lag;o++){let s=0;for(let k=0;o+k*lag<n;k++)s+=on[Math.round(o+k*lag)];if(s>ps){ps=s;ph=o}}
+  return{bpm,conf,ok:conf>1.8,phase:ph/fps};
+}
+function peaks(buf,N=600){const d=buf.getChannelData(0),step=Math.floor(d.length/N)||1,p=new Float32Array(N);
+  for(let i=0;i<N;i++){let m=0;for(let j=0;j<step;j+=8){const v=Math.abs(d[i*step+j]||0);if(v>m)m=v}p[i]=m}return p}
+function draw(cv,p,col,head){
+  const dpr=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*dpr;cv.height=h*dpr;
+  const g=cv.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,w,h);g.fillStyle=col;
+  const bw=w/p.length;for(let i=0;i<p.length;i++){const v=Math.max(1,p[i]*h*.95);g.fillRect(i*bw,(h-v)/2,Math.max(1,bw-.5),v)}
+  if(head!=null){g.fillStyle='#ff4fa3';g.fillRect(head*w,0,2,h)}
+}
+
+/* ---------- tracks UI ---------- */
+async function addFiles(files){
+  for(const f of files){
+    say('Analyzing '+f.name+'…');
+    try{
+      const buf=await AC().decodeAudioData(await f.arrayBuffer());
+      const a=detect(buf);
+      S.tracks.push({name:f.name.replace(/\.[^.]+$/,''),buf,peaks:peaks(buf),bpm:a.bpm,conf:a.conf,ok:a.ok,phase:a.phase,db:0,start:0,at:0,nudge:0});
+    }catch(e){say('Could not read '+f.name+'. Try MP3, WAV, M4A or OGG.');return}
+  }
+  say(S.tracks.length+' track(s) ready. Render a preview when you are set.');listTracks();
+}
+function listTracks(){
+  const box=$('tracks');box.innerHTML='';
+  S.tracks.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='track';
+    const B=S.mode==='B';
+    d.innerHTML=`<div class="thead"><span class="tname" title="${t.name.replace(/"/g,'&quot;')}"></span>
+      <span class="row" style="gap:6px"><span class="badge ${t.ok?'ok':''}">${t.ok?Math.round(t.bpm)+' BPM':'BPM uncertain'}</span>
+      ${B&&i===0?'<span class="badge pri">Primary</span>':''}
+      <button class="btn" data-a="up" ${i?'':'disabled'} aria-label="Move up">↑</button>
+      <button class="btn" data-a="dn" ${i<S.tracks.length-1?'':'disabled'} aria-label="Move down">↓</button>
+      <button class="btn" data-a="rm" aria-label="Remove">Remove</button></span></div>
+      <canvas></canvas>
+      <div class="row"><label>Gain <b>${t.db} dB</b><input type="range" data-k="db" min="-18" max="6" value="${t.db}"></label><label>Beat nudge <b>${t.nudge} ms</b><input type="range" data-k="nudge" min="-250" max="250" value="${t.nudge}"></label>
+      ${B?`<label>Start in source <b>${t.start} s</b><input type="range" data-k="start" min="0" max="${Math.floor(t.buf.duration)}" value="${t.start}"></label>
+      ${i?`<label>Enters mix at <b>${t.at} s</b><input type="range" data-k="at" min="0" max="240" value="${t.at}"></label>`:''}`:''}</div>`;
+    d.querySelector('.tname').textContent='Track '+(i+1)+': '+t.name;
+    d.querySelector('canvas').dataset.i=i;
+    d.addEventListener('click',e=>{const a=e.target.dataset.a;if(!a)return;
+      if(a==='rm')S.tracks.splice(i,1);else{const j=a==='up'?i-1:i+1;[S.tracks[i],S.tracks[j]]=[S.tracks[j],S.tracks[i]]}listTracks()});
+    d.addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;t[k]=+e.target.value;e.target.previousSibling.textContent&&(e.target.parentNode.querySelector('b').textContent=t[k]+(k==='db'?' dB':k==='nudge'?' ms':' s'))});
+    box.appendChild(d);
+    draw(d.querySelector('canvas'),t.peaks,'#27e1ff');
+  });
+}
+
+/* ---------- mix planning ---------- */
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function rateFor(t,target){return(+$('tempo').checked&&t.ok&&target)?clamp(target/t.bpm,.92,1.08):1}
+function snap(it,t){ // nearest beat of item's grid in mix time
+  const beat=60/it.tr.bpm,k=Math.round(((t-it.at)*it.rate+it.off-it.tr.phase)/beat);
+  return it.at+(it.tr.phase+k*beat-it.off)/it.rate;
+}
+function plan(){
+  const T=S.tracks,items=[],al=$('align').checked,notes=[];
+  const first=T[0];
+  const target=S.tgt||(first.ok?first.bpm*S.tempoMul:0);
+  if(S.mode==='B'){
+    const D=+$('dur').value,tr=+$('trans').value;
+    T.forEach((t,i)=>{
+      const rate=i?rateFor(t,first.ok?first.bpm:0):1;
+      let off=t.start;
+      if(i&&al&&t.ok&&first.ok){const b=60/t.bpm;off=clamp(t.phase+Math.round((off-t.phase)/b)*b,0,t.buf.duration-1)}
+      let at=i?t.at:0;
+      if(i&&al&&t.ok&&first.ok)at=Math.max(0,snap(items[0],at));
+      const len=Math.min(D-at,(t.buf.duration-off)/rate);
+      if(len>0.5)items.push({tr:t,rate,at,off,len,fin:i?tr:0,fout:tr});
+    });
+  }else{
+    T.forEach((t,i)=>{
+      const rate=rateFor(t,target),len=t.buf.duration/rate;let at=0,fin=0;
+      const it={tr:t,rate,off:0,len,at,fin:0,fout:0};
+      if(i){const p=items[i-1],X=Math.min(+$('xfade').value,p.len*.5,len*.5);
+        at=p.at+p.len-X;it.at=at;
+        if(al&&t.ok&&p.tr.ok){const g=snap(p,at+t.phase/rate);it.at=g-t.phase/rate;if(it.at<p.at+p.len*.3)it.at=at}
+        const ov=Math.max(.5,p.at+p.len-it.at);p.fout=ov;it.fin=ov}
+      items.push(it);
+    });
+    items[items.length-1].fout=2;
+  }
+  const total=Math.max(...items.map(x=>x.at+x.len));
+  return{items,total,bpm:target||(first.ok?first.bpm:120)};
+}
+
+/* ---------- render ---------- */
+const curve=(n,up)=>{const c=new Float32Array(64);for(let i=0;i<64;i++){const x=i/63*Math.PI/2;c[i]=up?Math.sin(x):Math.cos(x)}return c};
+const db=v=>Math.pow(10,v/20);
+function impulse(oc,sec){const n=oc.sampleRate*sec,b=oc.createBuffer(2,n,oc.sampleRate);
+  for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.5)}return b}
+async function render(){
+  const P=plan(),sr=44100,echo=+$('fxE').value/100,rev=+$('fxR').value/100,tail=(echo||rev)?3:0.5;
+  const oc=new OfflineAudioContext(2,Math.ceil((P.total+tail)*sr),sr);
+  const bus=oc.createGain();
+  const lo=oc.createBiquadFilter();lo.type='lowshelf';lo.frequency.value=120;lo.gain.value=+$('eqL').value;
+  const mi=oc.createBiquadFilter();mi.type='peaking';mi.frequency.value=2500;mi.Q.value=.8;mi.gain.value=+$('eqM').value;
+  const hi=oc.createBiquadFilter();hi.type='highshelf';hi.frequency.value=6500;hi.gain.value=+$('eqH').value;
+  const hp=oc.createBiquadFilter();hp.type='highpass';hp.frequency.value=20;
+  const pg=oc.createGain(),comp=oc.createDynamicsCompressor();
+  bus.connect(lo);lo.connect(mi);mi.connect(hi);hi.connect(hp);hp.connect(pg);pg.connect(comp);comp.connect(oc.destination);
+  const beat=60/P.bpm;
+  if($('fxP').checked)for(let t=0;t<P.total;t+=beat){pg.gain.setValueAtTime(.4,t);pg.gain.linearRampToValueAtTime(1,t+beat*.7)}
+  if($('fxB').checked){const s=Math.max(0,P.total-10);hp.frequency.setValueAtTime(20,s);hp.frequency.exponentialRampToValueAtTime(3500,P.total-.3);hp.frequency.setValueAtTime(20,P.total-.29)}
+  if(echo){const d=oc.createDelay(2),f=oc.createGain(),w=oc.createGain();d.delayTime.value=beat*.75;f.gain.value=.4;w.gain.value=echo;pg.connect(d);d.connect(f);f.connect(d);d.connect(w);w.connect(comp)}
+  if(rev){const c=oc.createConvolver();c.buffer=impulse(oc,2.2);const w=oc.createGain();w.gain.value=rev*.8;pg.connect(c);c.connect(w);w.connect(comp)}
+  const last=P.items.length-1;
+  P.items.forEach((it,ix)=>{
+    const A=Math.max(0,it.at+(it.tr.nudge||0)/1000);
+    const s=oc.createBufferSource();s.buffer=it.tr.buf;s.playbackRate.value=it.rate;
+    const g=oc.createGain(),tg=oc.createGain(),bl=oc.createBiquadFilter();tg.gain.value=db(it.tr.db);bl.type='lowshelf';bl.frequency.value=200;
+    const fi=Math.min(it.fin,it.len/2),fo=Math.min(it.fout,it.len/2);
+    if(fi>0){g.gain.setValueAtTime(0,0);g.gain.setValueCurveAtTime(curve(64,true),A,fi)}else g.gain.setValueAtTime(1,0);
+    if(fo>0)g.gain.setValueCurveAtTime(curve(64,false),A+it.len-fo,fo);
+    if($('swap').checked){
+      if(fi>0){bl.gain.setValueAtTime(-30,0);bl.gain.setValueAtTime(-30,A+fi/2);bl.gain.linearRampToValueAtTime(0,A+fi/2+.4)}
+      if(fo>0&&ix<last){bl.gain.setValueAtTime(0,A+it.len-fo/2);bl.gain.linearRampToValueAtTime(-30,A+it.len-fo/2+.4)}
+    }
+    s.connect(bl);bl.connect(g);g.connect(tg);tg.connect(bus);s.start(A,it.off);s.stop(A+it.len);
+  });
+  const dv=+$('fxD').value/100;
+  if(dv>0){
+    const nb=oc.createBuffer(1,oc.sampleRate*.2,oc.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+    const pat='DT-TD-T-',st=beat/2;let n=0;
+    for(let t=0;t<P.total;t+=st,n++){const c=pat[n%8];if(c==='-')continue;
+      const e=oc.createGain();e.connect(comp);
+      if(c==='D'){const o=oc.createOscillator();o.frequency.setValueAtTime(170,t);o.frequency.exponentialRampToValueAtTime(65,t+.14);e.gain.setValueAtTime(dv*.9,t);e.gain.exponentialRampToValueAtTime(.001,t+.3);o.connect(e);o.start(t);o.stop(t+.32)}
+      else{const ns=oc.createBufferSource();ns.buffer=nb;const f=oc.createBiquadFilter();f.type='bandpass';f.frequency.value=3200;f.Q.value=1.2;e.gain.setValueAtTime(dv*.5,t);e.gain.exponentialRampToValueAtTime(.001,t+.09);ns.connect(f);f.connect(e);ns.start(t);ns.stop(t+.1)}}
+  }
+  const out=await oc.startRendering();
+  let pk=0;for(let c=0;c<2;c++){const d=out.getChannelData(c);for(let i=0;i<d.length;i++){const v=Math.abs(d[i]);if(v>pk)pk=v}}
+  const k=pk>0?.89/pk:1;for(let c=0;c<2;c++){const d=out.getChannelData(c);for(let i=0;i<d.length;i++)d[i]*=k}
+  return{out,P};
+}
+function wav(buf){
+  const n=buf.length,ch=2,ab=new ArrayBuffer(44+n*ch*2),v=new DataView(ab);
+  const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+  w(0,'RIFF');v.setUint32(4,36+n*4,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,2,true);
+  v.setUint32(24,buf.sampleRate,true);v.setUint32(28,buf.sampleRate*4,true);v.setUint16(32,4,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*4,true);
+  const L=buf.getChannelData(0),R=buf.getChannelData(1);let o=44;
+  for(let i=0;i<n;i++){for(const d of[L,R]){v.setInt16(o,clamp(d[i],-1,1)*32767,true);o+=2}}
+  return new Blob([ab],{type:'audio/wav'});
+}
+
+/* ---------- transport ---------- */
+function stop(){if(srcNode){try{srcNode.stop()}catch(e){}srcNode=null}cancelAnimationFrame(raf);if(S.out)draw($('out'),S.pk,'#9b7bff')}
+function play(){
+  if(!S.out)return;stop();const c=AC();if(c.state==='suspended')c.resume();
+  srcNode=c.createBufferSource();srcNode.buffer=S.out;srcNode.connect(c.destination);srcNode.start();t0=c.currentTime;
+  srcNode.onended=()=>{cancelAnimationFrame(raf);draw($('out'),S.pk,'#9b7bff')};
+  const tick=()=>{const p=(c.currentTime-t0)/S.out.duration;if(p<=1){draw($('out'),S.pk,'#9b7bff',p);raf=requestAnimationFrame(tick)}};tick();
+}
+async function doRender(){
+  if(busy)return;if(!S.tracks.length){say('Add at least one track first.');return}
+  busy=true;stop();$('renderBtn').disabled=true;say('Rendering mix…');
+  await new Promise(r=>setTimeout(r,30));
+  try{
+    const{out,P}=await render();S.out=out;S.pk=peaks(out,700);draw($('out'),S.pk,'#9b7bff');
+    ['playBtn','stopBtn','expBtn'].forEach(i=>$(i).disabled=false);
+    say('Ready: '+Math.floor(out.duration/60)+':'+String(Math.round(out.duration%60)).padStart(2,'0')+' long, '+P.items.length+' track(s) at '+Math.round(P.bpm)+' BPM reference.');
+    play();
+  }catch(e){say('Render failed: '+e.message)}
+  busy=false;$('renderBtn').disabled=false;
+}
+
+/* ---------- remix instructions ---------- */
+const RULES=[
+  [/energ|hype|upbeat|lively/,'Tempo +4%, bass +2 dB, treble +2 dB',p=>{p.tempoMul=1.04;p.eqL+=2;p.eqH+=2}],
+  [/house|club|dance|edm/,'Club tempo near 124 BPM, bass +3 dB, beat-synced pumping',p=>{p.tgt=124;p.eqL+=3;p.fxP=1}],
+  [/bass|low end|heavy/,'Bass +5 dB',p=>{p.eqL+=5}],
+  [/build|riser|drop/,'Filter build-up before the end of the mix',p=>{p.fxB=1}],
+  [/dramatic/,'Echo 30% and filter build-up',p=>{p.fxE=Math.max(p.fxE,30);p.fxB=1}],
+  [/vocal|clear|voice/,'Mid presence +3 dB (boosts vocal range; does not isolate vocals)',p=>{p.eqM+=3}],
+  [/echo|dreamy|delay/,'Echo 30%',p=>{p.fxE=Math.max(p.fxE,30)}],
+  [/reverb|space|hall|atmos/,'Reverb 30%',p=>{p.fxR=Math.max(p.fxR,30)}],
+  [/smooth|longer transition/,'Crossfade 14 s',p=>{p.xf=14}],
+  [/darbuka|tabla|drum|percussion|rhythmic|arabic/,'Synthesized darbuka-style groove at 60% (generated drum sounds, not sampled)',p=>{p.fxD=60;p.fxP=0}],
+  [/dark|warm|mellow/,'Treble −3 dB',p=>{p.eqH-=3}],
+];
+const UNSUP=[[/oud|piano|guitar|violin|instrument/,'New melodic instruments (needs a sample library or generative model)'],[/isolate|acapella|a cappella|stem/,'Vocal isolation (needs a source-separation model)']];
+function applyPrompt(){
+  const t=$('prompt').value.toLowerCase(),p={tempoMul:1,tgt:0,eqL:0,eqM:0,eqH:0,fxE:0,fxR:0,fxP:0,fxB:0,fxD:0,xf:0},ok=[],no=[];
+  RULES.forEach(([re,l,fn])=>{if(re.test(t)){ok.push(l);fn(p)}});
+  UNSUP.forEach(([re,l])=>{if(re.test(t))no.push(l)});
+  S.tempoMul=p.tempoMul;S.tgt=p.tgt;
+  const set=(id,v)=>{$(id).value=clamp(v,+$(id).min,+$(id).max);$(id).dispatchEvent(new Event('input'))};
+  set('eqL',p.eqL);set('eqM',p.eqM);set('eqH',p.eqH);set('fxE',p.fxE);set('fxR',p.fxR);set('fxD',p.fxD);$('fxP').checked=!!p.fxP;$('fxB').checked=!!p.fxB;if(p.xf)set('xfade',p.xf);
+  const a=$('applied');a.innerHTML='';
+  const add=(x,c)=>{const s=document.createElement('span');s.className='chip '+c;s.textContent=x;a.appendChild(s)};
+  ok.forEach(x=>add(x,''));no.forEach(x=>add('Not available: '+x,'no'));
+  if(!ok.length&&!no.length)add('No supported effect matched. Try words like energetic, club, bass, build-up, echo or reverb.','no');
+  say('Settings updated. Render a preview to hear them.');
+}
+
+/* ---------- saved settings ---------- */
+const KEYS=['xfade','dur','trans','eqL','eqM','eqH','fxE','fxR','fxD','tempo','align','swap','fxP','fxB','prompt'];
+try{const sv=JSON.parse(localStorage.getItem('vms')||'{}');KEYS.forEach(k=>{if(k in sv){const el=$(k);if(el.type==='checkbox')el.checked=sv[k];else el.value=sv[k]}})}catch(e){}
+const saveSet=()=>{try{const o={};KEYS.forEach(k=>{const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value});localStorage.setItem('vms',JSON.stringify(o))}catch(e){}};
+document.addEventListener('input',saveSet);document.addEventListener('change',saveSet);
+/* ---------- wiring ---------- */
+[['xfade','xv',' s'],['dur','dv',' s'],['trans','tv',' s'],['eqL','lv',' dB'],['eqM','mv',' dB'],['eqH','hv',' dB'],['fxE','ev','%'],['fxR','rv','%'],['fxD','dd','%']]
+  .forEach(([i,o,u])=>{const f=()=>$(o).textContent=$(i).value+u;$(i).addEventListener('input',f);f()});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  S.mode=b.dataset.m;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  $('mAopts').classList.toggle('hide',S.mode==='B');$('mBopts').classList.toggle('hide',S.mode!=='B');$('pC').classList.toggle('hide',S.mode!=='C');
+  $('ctlTitle').textContent=S.mode==='B'?'Mashup settings':'Transitions';
+  if(S.mode!=='C'){S.tgt=0;S.tempoMul=1}listTracks();
+});
+$('drop').onclick=()=>$('file').click();
+$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('file').click()}};
+$('file').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+['dragover','dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.toggle('over',ev==='dragover');if(ev==='drop')addFiles([...e.dataTransfer.files].filter(f=>f.type.startsWith('audio')))}));
+$('renderBtn').onclick=doRender;$('playBtn').onclick=play;$('stopBtn').onclick=stop;
+$('applyBtn').onclick=applyPrompt;
+$('expBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(wav(S.out));a.download='vibe-mix.wav';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)};
+addEventListener('resize',()=>{listTracks();if(S.out)draw($('out'),S.pk,'#9b7bff')});
+})();
+</script>
+</body>
+</html>
