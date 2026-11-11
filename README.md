@@ -1,4 +1,4 @@
-# VIBE MIX STUDIO server
+# VIBE MIX STUDIO Beta
 
 Runs the studio locally and adds two features the browser-only version cannot do:
 
